@@ -1,0 +1,5 @@
+non-empty text file
+added new line 1
+added new line 2
+added new line 1
+added new line 2
