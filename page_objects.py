@@ -1,10 +1,12 @@
-from playwright.sync_api import Page, expect
+from playwright.sync_api import expect, Playwright
 import pytest
 
 class InternetPage:
     # Verify the file is downloaded and it exists on the machine
-    def test_file_download(page: Page):
+    def test_file_download(playwright: Playwright) -> None:
         # Navigate to https://the-internet.herokuapp.com/
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        page = browser.new_page()
         page.goto("https://the-internet.herokuapp.com/")
 
         # Click File Download Link
@@ -12,16 +14,21 @@ class InternetPage:
 
         # Select one of the files ("upload-me.txt")
         with page.expect_download() as download_info:
-            page.get_by_role("link", name="upload-me.txt").click()
+            page.get_by_role("link", name="PIHU.png").click()
 
         # Verify the file is downloaded and it exists on the machine    
         download = download_info.value
         print(download.path())
-        download.save_as("/home/dmakiling-admin/automation-framework-development/upload-me.txt")
+        download.save_as("/home/dmakiling-admin/automation-framework-development/PIHU.png")
+
+        # Close browser
+        browser.close()
 
     # Verify the file is uploaded
-    def test_file_upload(page: Page):
+    def test_file_upload(playwright: Playwright):
         # Navigate to https://the-internet.herokuapp.com/
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        page = browser.new_page()
         page.goto("https://the-internet.herokuapp.com/")
 
         # Click File Upload Link
@@ -30,32 +37,44 @@ class InternetPage:
         # Upload file from previous test case
         page.locator("#file-upload").click()
         page.locator("#file-upload").click()
-        page.locator("#file-upload").set_input_files("/home/dmakiling-admin/automation-framework-development/upload-me.txt")
+        page.locator("#file-upload").set_input_files("/home/dmakiling-admin/automation-framework-development/PIHU.png")
         page.get_by_role("button", name="Upload").click()
 
         # Verify the file is uploaded
         assert page.inner_text('h3') == "File Uploaded!"
 
-    #Verify User is logged in
-    def test_login(page: Page):
+        # Close browser
+        browser.close()
+
+    def test_login(playwright: Playwright) -> None:
         # Navigate to https://the-internet.herokuapp.com/
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        page = browser.new_page()
         page.goto("https://the-internet.herokuapp.com/")
 
         # Click Basic Auth link
         page.get_by_role("link", name="Basic Auth").click()
 
         # Enter in the credentials
-        page.get_by_label("Username").fill("admin")
-        page.get_by_label("Password").fill("admin")
-        page.get_by_role("button", name="Sign in").click()
+        context = browser.new_context(http_credentials={'username':'admin', 'password':'admin'})
+        page = context.new_page()
         page.goto("http://the-internet.herokuapp.com/basic_auth")
 
-        # Verify User is logged in
-        assert page.inner_text('p') == "Congratulations! You must have the proper credentials."
+        # Locate <p> in page
+        result = page.locator("#content p")
+
+        # Finds the correct text
+        expect(result).to_have_text('Congratulations! You must have the proper credentials.')
+
+        # Close browser
+        context.close()
+        browser.close()
 
     # Verify New Window is opened
-    def test_new_window(page: Page):
+    def test_new_window(playwright: Playwright):
         # Navigate to https://the-internet.herokuapp.com/
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        page = browser.new_page()
         page.goto("https://the-internet.herokuapp.com/")
 
         # Click Multiple Windows link
@@ -68,4 +87,3 @@ class InternetPage:
 
         # Verify the text in the New Window "New Window" 
         assert page1.title() == "New Window"
-    
